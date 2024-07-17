@@ -43,6 +43,7 @@ server <-  function(input, output) {
         compareDF::compare_df(
           df_new = csv_1_reac(),
           df_old = csv_2_reac(),
+          group_col = names(csv_1_reac())[1],   # 1st col of csv, default name should be `File name`
           keep_unchanged_rows	= input$keep_unchanged_rowsButton,
           keep_unchanged_cols = input$keep_unchanged_colsButton
         ),  
