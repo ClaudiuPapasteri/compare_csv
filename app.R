@@ -7,22 +7,38 @@ ui <- fluidPage(
   fluidPage(
     titlePanel("Compara rezultate"),
     sidebarLayout(
-      
       sidebarPanel(
-        fileInput(inputId = "csv_1",
-                  label = "Upload csv 1",
-                  accept = c(".csv")),
-        fileInput(inputId = "csv_2",
-                  label = "Upload csv 2",
-                  accept = c(".csv")),
-        checkboxInput("keep_unchanged_rowsButton", "Randuri neschimbate", value = FALSE),
-        checkboxInput("keep_unchanged_colsButton", "Coloane neschimbate", value = FALSE),
-        actionButton("compareButton", "Compara"),
+        helpText("Uploadeaza csv-urile exportate din FormScanner."),
+        wellPanel(
+          fileInput(inputId = "csv_1",
+                    label = "Upload csv 1",
+                    accept = c(".csv")),
+          fileInput(inputId = "csv_2",
+                    label = "Upload csv 2",
+                    accept = c(".csv")),
+          checkboxInput("keep_unchanged_rowsButton", "Randuri neschimbate", value = FALSE),
+          checkboxInput("keep_unchanged_colsButton", "Coloane neschimbate", value = FALSE),
+          actionButton("compareButton", "Compara")
+        ),
+        
+        helpText("Editeaza un csv si exporta."),
+        wellPanel(
+          radioButtons("chose_dfButton", "Alege csv:",
+            c("Primul" = "1", 
+              "Al doilea" = "2"
+            ),
+            selected = "1"
+          ),
+          downloadButton("downloadResults", "Download csv editat"),
+        ),
+        
       ),
       
       mainPanel(
-        # htmlOutput("filetable")
-        uiOutput("filetable")
+        tabsetPanel(
+          tabPanel("Compara csv", uiOutput("filetable")),
+          tabPanel("Editeaza csv", rHandsontableOutput("hotable"))
+        )  
       )
     )
   )
@@ -30,6 +46,10 @@ ui <- fluidPage(
 
 
 server <-  function(input, output) {
+  
+
+  # Compare csv -------------------------------------------------------------
+
   csv_1_reac <- reactive({
     readr::read_csv2(input$csv_1$datapath, col_types = cols(.default = col_character()))
   })
@@ -53,28 +73,43 @@ server <-  function(input, output) {
   })
   output$filetable <- renderUI({compare_csvs_reac()})
   
+
+  # Edit csv ----------------------------------------------------------------
+
+  values <- reactiveValues()
+  
+  observe({
+    if (is.null(input$csv_1) & is.null(input$csv_2)) {
+      values$DF <- data.frame()
+    } else if(input$chose_dfButton == "1") {
+      values$DF <- csv_1_reac()
+    } else if(input$chose_dfButton == "2") {
+      values$DF <- csv_2_reac()
+    }
+  })
+  
+  
+  output$hotable <- renderRHandsontable({ rhandsontable(values$DF, height = 700, selectCallback = TRUE, readOnly = FALSE) })
+  
+  hotable_reac <-  reactive({
+    if(is.null(input$hotable)){return(values$DF)}
+    else if(!identical(values$DF,input$hotable)){
+      as.data.frame(hot_to_r(input$hotable))
+    }
+  })
+  
+  # Downloadable csv of selected dataset ----
+  output$downloadResults <- downloadHandler(
+    filename = function() {
+      paste0("Rezultate_", format(Sys.time(), "%d_%H-%M-%S"), ".csv")
+    },  
+    content = function(file) {
+      readr::write_csv2(hotable_reac(), file)
+    }
+  )  
   
 }
 
 shinyApp(ui, server)
 
 
-
-
-
-
-# Dead code ---------------------------------------------------------------
-
-# folder <- r'-(C:\Users\User\Desktop\compare_csv)-'
-# setwd(folder)
-# 
-# filename_csv_1 <- dir(pattern = ".csv$")[1]
-# filename_csv_2 <- dir(pattern = ".csv$")[2]
-# 
-# csv_1 <- readr::read_csv2(filename_csv_1, col_types = cols(.default = col_character()))
-# csv_2 <- readr::read_csv2(filename_csv_2, col_types = cols(.default = col_character()))
-# 
-# compareDF::create_output_table(
-#   compareDF::compare_df(csv_1, csv_2),
-#   output_type = "html", limit = 1000
-# )  
