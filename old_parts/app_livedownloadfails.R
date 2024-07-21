@@ -2,20 +2,17 @@ library(shiny)
 library(readr)
 library(compareDF)
 library(rhandsontable)
-# library(shinyjs)  # dropped because downloadHandler doesnt work properly in shiny live
-library(DT)
 
 
-# Workaround for Chromium Issue 468227    # dropped because downloadHandler doesnt work properly in shiny live
+# Workaround for Chromium Issue 468227
 # https://shinylive.io/r/examples/#r-file-download
-# downloadButton <- function(...) {
-#   tag <- shiny::downloadButton(...)
-#   tag$attribs$download <- NULL
-#   tag
-# }
+downloadButton <- function(...) {
+  tag <- shiny::downloadButton(...)
+  tag$attribs$download <- NULL
+  tag
+}
 
 ui <- fluidPage(
-  # shinyjs::useShinyjs(),  # Include shinyjs  # dropped because downloadHandler doesnt work properly in shiny live
   fluidPage(
     titlePanel("Compara rezultate"),
     sidebarLayout(
@@ -41,9 +38,7 @@ ui <- fluidPage(
             ),
             selected = "1"
           ),
-          actionButton("save_hotableButton", "Salveaza editare")  # ,
-          # br(),    # dropped because downloadHandler doesnt work properly in shiny live
-          # shinyjs::hidden(downloadButton("downloadResults", "Download csv editat"))
+          downloadButton("downloadResults", "Download csv editat"),
         ),
         
       ),
@@ -51,8 +46,7 @@ ui <- fluidPage(
       mainPanel(
         tabsetPanel(
           tabPanel("Compara csv", uiOutput("filetable")),
-          tabPanel("Editeaza csv", rHandsontableOutput("hotable")),
-          tabPanel("Dl csv editat", dataTableOutput("DTtable"))
+          tabPanel("Editeaza csv", rHandsontableOutput("hotable"))
         )  
       )
     )
@@ -105,55 +99,29 @@ server <-  function(input, output) {
     }
   })
   
+  
   output$hotable <- renderRHandsontable({ rhandsontable(values$DF, height = 700, selectCallback = TRUE, readOnly = FALSE) })
   
-  hotable_reac <-  eventReactive(input$save_hotableButton, {
-    if(is.null(input$hotable)){return(NULL)}
+  hotable_reac <-  reactive({
+    if(is.null(input$hotable)){return(values$DF)}
     else if(!identical(values$DF, input$hotable)){
       as.data.frame(hot_to_r(input$hotable))
     }
   })
   
-  # observe({   # dropped because downloadHandler doesnt work properly in shiny live
-  #   if(!(input$save_hotableButton) & !is.null(hotable_reac())){
-  #     shinyjs::hide("downloadResults")
-  #   } else { 
-  #     shinyjs::show("downloadResults")
-  #   }
-  # })
-  
   # Downloadable csv of selected dataset ----
   output$downloadResults <- downloadHandler(
     filename = function() {
       paste0("Rezultate_", format(Sys.time(), "%d_%H-%M-%S"), ".csv")
-    },
+    },  
     content = function(file) {
       readr::write_csv2(hotable_reac(), file)
       # write.csv2(hotable_reac(), file)   # readr fully supported so no need
     }
-  )
-
-  outputOptions(output, "downloadResults", suspendWhenHidden = FALSE)  # this was not the cause of the error
-
-  output$DTtable <- renderDataTable({
-    req(hotable_reac()) # render only if there is data available
-    DT::datatable(
-      hotable_reac(),
-      extensions = 'Buttons',
-      options = list(
-        paging = TRUE,
-        searching = TRUE,
-        fixedColumns = TRUE,
-        autoWidth = TRUE,
-        ordering = TRUE,
-        dom = "tB",
-        buttons = c("csv")
-      ),
-      class = "display"
-    )  
-  })
+  )  
   
-
+  # outputOptions(output, "downloadResults", suspendWhenHidden = FALSE)  # this was not the cause of the error
+  
 }
 
 shinyApp(ui, server)
