@@ -52,7 +52,7 @@ ui <- fluidPage(
         tabsetPanel(
           tabPanel("Compara csv", uiOutput("filetable")),
           tabPanel("Editeaza csv", rHandsontableOutput("hotable")),
-          tabPanel("Download csv", DT::dataTableOutput("DTtable"))
+          tabPanel("Dl csv editat", DT::dataTableOutput("DTtable"))
         )  
       )
     )
