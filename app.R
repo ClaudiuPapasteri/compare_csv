@@ -3,6 +3,15 @@ library(readr)
 library(compareDF)
 library(rhandsontable)
 
+
+# Workaround for Chromium Issue 468227
+# https://shinylive.io/r/examples/#r-file-download
+downloadButton <- function(...) {
+  tag <- shiny::downloadButton(...)
+  tag$attribs$download <- NULL
+  tag
+}
+
 ui <- fluidPage(
   fluidPage(
     titlePanel("Compara rezultate"),
@@ -52,9 +61,11 @@ server <-  function(input, output) {
 
   csv_1_reac <- reactive({
     readr::read_csv2(input$csv_1$datapath, col_types = cols(.default = col_character()))
+    # read.csv2(input$csv_1$datapath)    # readr fully supported so no need
   })
   csv_2_reac <- reactive({
     readr::read_csv2(input$csv_2$datapath, col_types = cols(.default = col_character()))
+    # read.csv2(input$csv_2$datapath)      # readr fully supported so no need
   })
   
   compare_csvs_reac <- eventReactive(input$compareButton, {
@@ -81,9 +92,9 @@ server <-  function(input, output) {
   observe({
     if (is.null(input$csv_1) & is.null(input$csv_2)) {
       values$DF <- data.frame()
-    } else if(input$chose_dfButton == "1") {
+    } else if(input$chose_dfButton == "1") {   
       values$DF <- csv_1_reac()
-    } else if(input$chose_dfButton == "2") {
+    } else if(input$chose_dfButton == "2") {  
       values$DF <- csv_2_reac()
     }
   })
@@ -105,10 +116,11 @@ server <-  function(input, output) {
     },  
     content = function(file) {
       readr::write_csv2(hotable_reac(), file)
+      # write.csv2(hotable_reac(), file)   # readr fully supported so no need
     }
   )  
   
-  outputOptions(output, "downloadResults", suspendWhenHidden = FALSE)
+  # outputOptions(output, "downloadResults", suspendWhenHidden = FALSE)  # this was not the cause of the error
   
 }
 
