@@ -93,7 +93,7 @@ server <-  function(input, output) {
   
   hotable_reac <-  reactive({
     if(is.null(input$hotable)){return(values$DF)}
-    else if(!identical(values$DF,input$hotable)){
+    else if(!identical(values$DF, input$hotable)){
       as.data.frame(hot_to_r(input$hotable))
     }
   })
@@ -107,6 +107,8 @@ server <-  function(input, output) {
       readr::write_csv2(hotable_reac(), file)
     }
   )  
+  
+  outputOptions(output, "downloadResults", suspendWhenHidden = FALSE)
   
 }
 
