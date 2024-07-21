@@ -6,4 +6,8 @@ Shiny live app to compare csv files
 
 Run locally:
 
-`source_gist("https://gist.github.com/ClaudiuPapasteri/4cebdd315995be55ce42845dce94678d")`
+```{r, eval=FALSE}
+if (!require("devtools")) install.packages("devtools", dependencies = TRUE)
+source_gist("https://gist.github.com/ClaudiuPapasteri/4cebdd315995be55ce42845dce94678d")
+shinyApp(ui, server)
+```
